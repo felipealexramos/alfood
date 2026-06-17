@@ -1,33 +1,54 @@
-![Integrando seu projeto React com APIs](thumbnail.png)
-
 # Alfood
 
-O Alfood é um site que lista restaurantes e pratos do menu. 
-É um MVP que tá só começando e ainda tem muitas funcionalidades novas para serem desenvolvidas.
+Alfood is a website that lists restaurants and their menu dishes.
+It's an MVP that's just getting started, with many new features still to be built.
 
-<img src="screencapture.png" alt="Imagem do Alfood" width="50%">
+<img src="screencapture.png" alt="Alfood screenshot" width="50%">
 
 
-## 🔨 Funcionalidades do projeto
+## 🔨 Features
 
-O Alfood começa com uma listagem estática de seu conteúdo e é esse o problema que queremos resolver.
-No decorrer do curso, vamos implementar toda a camada de comunicação com a API.
+- **Public storefront** — restaurant listing with pagination ("load more") consuming the public API (`/api/v1/`).
+- **Admin area** (`/admin`) — CRUD for restaurants and dishes consuming the admin API (`/api/v2/`).
+  - Create, edit, and delete restaurants.
+  - Create, edit, and delete dishes, with tag/restaurant selection and image upload.
 
-## ✔️ Técnicas e tecnologias utilizadas
+## 🗺️ Roadmap
 
-Se liga nessa lista de tudo que usaremos nesse treinamento:
+Alfood is an evolving MVP. The planned next steps are:
 
-- `React`
-- `React Hooks`
+1. **Data-layer and forms migration** _(in progress)_
+   - **React Query** (`@tanstack/react-query`) for all data fetching, replacing `axios` + `useEffect`/`useState`.
+   - **React Hook Form** for form management, replacing manual controlled state.
+   - **Zod** (with `@hookform/resolvers`) for form schema validation.
+2. **Automated testing**
+   - Unit and integration tests using React ecosystem testing libraries.
+   - End-to-end (E2E) tests with **Playwright** covering critical flows.
+
+> The step-1 dependencies are already installed; adoption across the components is still pending.
+
+## ✔️ Techniques and technologies
+
+- `React` + `React Hooks`
 - `TypeScript`
+- `Vite`
+- `React Router`
+- `Material UI (MUI)` + `Emotion`
+- `SCSS Modules`
 - `axios`
+- `React Query` · `React Hook Form` · `Zod` _(to be adopted — see Roadmap)_
 
-## 🛠️ Abrir e rodar o projeto
+## 🛠️ Getting started
 
-Para abrir e rodar o projeto, execute npm i para instalar as dependências e npm start para inicar o projeto.
+> Prerequisite: the front-end expects an API running at `http://localhost:8000` (`/api/v1/` and `/api/v2/`).
 
-Depois, acesse <a href="http://localhost:3000/">http://localhost:3000/</a> no seu navegador.
+To run the project, execute `npm i` to install dependencies and `npm run dev` to start it.
 
-## 📚 Mais informações do curso
+Then open <a href="http://localhost:3000/">http://localhost:3000/</a> in your browser.
 
-Busque na plataforma da Alura o curso **Integrando seu projeto React com APIs** publicado na Escola Frontend.
+### Available scripts
+
+- `npm run dev` — starts the development server (Vite) on port 3000.
+- `npm run build` — type-checks (`tsc`) and builds for production.
+- `npm run typecheck` — type-check only, no build output.
+- `npm run preview` — serves the production build locally.
