@@ -8,9 +8,16 @@ import {
   Toolbar,
   Typography,
 } from "@mui/material";
-import { Outlet, Link as RouterLink } from "react-router-dom";
+import { Outlet, Link as RouterLink, useNavigate } from "react-router-dom";
+import { clearToken } from "../../auth/session";
 
 const AdminBasePage = () => {
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    clearToken();
+    navigate("/admin/login");
+  };
 
   return (
     <>
@@ -34,6 +41,9 @@ const AdminBasePage = () => {
                 <Button sx={{ my: 2, color: "white" }}>New Dish</Button>
               </Link>
             </Box>
+            <Button sx={{ my: 2, color: "white" }} onClick={handleLogout}>
+              Log out
+            </Button>
           </Toolbar>
         </Container>
       </AppBar>

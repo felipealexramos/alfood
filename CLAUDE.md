@@ -25,7 +25,7 @@ Tests use **Vitest + Testing Library** (jsdom environment, `globals: true` — r
 
 The backend is the NestJS app in the sibling repo `../alfood-api`, served at `http://localhost:8000` — configurable via `VITE_API_URL` (see [.env.example](.env.example); the code falls back to localhost:8000). Two axios clients live in [src/http/index.ts](src/http/index.ts):
 
-- `http` (default export) → `/api/v2/` — admin CRUD (restaurantes, pratos, tags). **The backend protects all of `/api/v2` with JWT** (`POST /api/v2/auth/login` with `{ usuario, senha }` → `{ access_token }`); the front-end login flow is not implemented yet (planned milestone M2).
+- `http` (default export) → `/api/v2/` — admin CRUD (restaurantes, pratos, tags). **The backend protects all of `/api/v2` with JWT** (`POST /api/v2/auth/login` with `{ usuario, senha }` → `{ access_token }`). The client has interceptors: a request interceptor injects `Authorization: Bearer <token>`, and a response interceptor clears the token and hard-redirects to `/admin/login` on any `401`. The JWT lives in `localStorage` (`alfood.accessToken`), managed by [src/auth/session.ts](src/auth/session.ts); [src/auth/authService.ts](src/auth/authService.ts) performs the login call.
 - `httpV1` (named export) → `/api/v1/` — public showcase listing (no auth).
 
 Endpoint shape notes:
@@ -36,7 +36,7 @@ Endpoint shape notes:
 
 ## Architecture
 
-- **Routing** is centralized in [src/App.tsx](src/App.tsx) with React Router v7: `/`, `/restaurants`, and `/admin/*` nested under [AdminBasePage](src/pages/Admin/AdminBasePage.tsx), which renders the shared MUI AppBar nav + `<Outlet />`. Form routes are reused for both create (`/new`) and edit (`/:id`) — components branch on `useParams().id`.
+- **Routing** is centralized in [src/App.tsx](src/App.tsx) with React Router v7: `/`, `/restaurants`, a public `/admin/login`, and the `/admin/*` CRUD routes nested under [AdminBasePage](src/pages/Admin/AdminBasePage.tsx) (shared MUI AppBar nav + `<Outlet />` + a "Log out" button). The `/admin` branch is wrapped in [ProtectedRoute](src/components/ProtectedRoute/index.tsx), which redirects to `/admin/login` when no token is stored (login itself stays outside the guard). Form routes are reused for both create (`/new`) and edit (`/:id`) — components branch on `useParams().id`.
 - **Two UI worlds, two styling systems:**
   - Public site (`pages/Home`, `pages/RestaurantShowcase`, `components/*`) uses **SCSS modules** (`*.module.scss`, imported as `styles` objects).
   - Admin area (`pages/Admin/*`) uses **MUI v7** components with the `sx` prop and Emotion.
@@ -47,4 +47,4 @@ Endpoint shape notes:
 
 Dependencies for `@tanstack/react-query`, `react-hook-form`, `zod`, and `@hookform/resolvers` are **installed but not yet adopted** — data fetching currently uses raw `axios` + `useEffect`/`useState`, and forms use controlled `useState` (see [DishForm.tsx](src/pages/Admin/AdminDishes/DishForm.tsx) and [RestaurantList/index.tsx](src/components/RestaurantList/index.tsx)). When touching data/forms, prefer migrating toward React Query + react-hook-form + Zod rather than extending the legacy pattern.
 
-Integration milestones agreed for the alfood-api backend: M2 = admin JWT auth (login page, Authorization interceptor, guarded `/admin` routes) — this blocks all `/api/v2` CRUD; M3 = React Query adoption; M4 = react-hook-form + Zod forms; M5 = verification/docs. M1 (env-based HTTP clients, no hardcoded URLs, nested `pratos[]` rendering in the showcase) is done.
+Integration milestones for the alfood-api backend: M1 (env-based HTTP clients, no hardcoded URLs, nested `pratos[]` rendering in the showcase) and M2 (admin JWT auth: login page, Authorization/401 interceptors, guarded `/admin` routes, logout) are **done**. Remaining: M3 = React Query adoption; M4 = react-hook-form + Zod forms; M5 = verification/docs.
