@@ -1,10 +1,10 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { AxiosResponse } from "axios";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { IPagination } from "../../interfaces/IPagination";
 import IRestaurant from "../../interfaces/IRestaurant";
 import { httpV1 } from "../../http";
+import { createQueryWrapper } from "../../test/queryWrapper";
 import RestaurantList from ".";
 
 vi.mock("../../http", () => ({
@@ -12,18 +12,12 @@ vi.mock("../../http", () => ({
   httpV1: { get: vi.fn() },
 }));
 
-const pageResponse = (
+const page = (
   restaurants: IRestaurant[],
   next = ""
-): AxiosResponse<IPagination<IRestaurant>> =>
-  ({
-    data: {
-      count: restaurants.length,
-      next,
-      previous: "",
-      results: restaurants,
-    },
-  } as AxiosResponse<IPagination<IRestaurant>>);
+): { data: IPagination<IRestaurant> } => ({
+  data: { count: restaurants.length, next, previous: "", results: restaurants },
+});
 
 const lyllys: IRestaurant = {
   id: 1,
@@ -42,6 +36,11 @@ const lyllys: IRestaurant = {
 
 const kalamos: IRestaurant = { id: 2, nome: "Kalamos", pratos: [] };
 
+const renderList = () => {
+  const { wrapper } = createQueryWrapper();
+  return render(<RestaurantList />, { wrapper });
+};
+
 describe("RestaurantList", () => {
   const getMock = vi.mocked(httpV1.get);
 
@@ -49,24 +48,23 @@ describe("RestaurantList", () => {
     getMock.mockReset();
   });
 
-  it("fetches the first page through the httpV1 client and renders restaurants with their nested dishes", async () => {
-    getMock.mockResolvedValueOnce(pageResponse([lyllys]));
+  it("fetches the first page through httpV1 and renders restaurants with nested dishes", async () => {
+    getMock.mockResolvedValueOnce(page([lyllys]));
 
-    render(<RestaurantList />);
+    renderList();
 
     expect(await screen.findByText("Lyllys Cafe")).toBeInTheDocument();
-    expect(await screen.findByText("Mushroom Stroganoff")).toBeInTheDocument();
-    expect(getMock).toHaveBeenCalledTimes(1);
+    expect(screen.getByText("Mushroom Stroganoff")).toBeInTheDocument();
     expect(getMock).toHaveBeenCalledWith("restaurantes/");
   });
 
-  it('follows the "next" URL through the httpV1 client when clicking "Load more"', async () => {
+  it('follows the "next" URL when clicking "Load more" and hides the button on the last page', async () => {
     const nextPageUrl = "http://localhost:8000/api/v1/restaurantes/?page=2";
     getMock
-      .mockResolvedValueOnce(pageResponse([lyllys], nextPageUrl))
-      .mockResolvedValueOnce(pageResponse([kalamos]));
+      .mockResolvedValueOnce(page([lyllys], nextPageUrl))
+      .mockResolvedValueOnce(page([kalamos]));
 
-    render(<RestaurantList />);
+    renderList();
     const user = userEvent.setup();
 
     await user.click(await screen.findByRole("button", { name: /load more/i }));
@@ -77,5 +75,13 @@ describe("RestaurantList", () => {
     expect(
       screen.queryByRole("button", { name: /load more/i })
     ).not.toBeInTheDocument();
+  });
+
+  it("shows an error message when the request fails", async () => {
+    getMock.mockRejectedValueOnce(new Error("network down"));
+
+    renderList();
+
+    expect(await screen.findByText(/could not load restaurants/i)).toBeInTheDocument();
   });
 });

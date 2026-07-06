@@ -43,8 +43,15 @@ Endpoint shape notes:
 - **Folder layout:** `pages/` = route-level pages, `components/` = reusable UI (each is a folder with `index.tsx` + co-located `.module.scss`), `interfaces/` = shared TS types, `http/` = axios clients.
 - **Entry point** [src/index.tsx](src/index.tsx) wraps `<App/>` in `QueryClientProvider` (React Query, `refetchOnWindowFocus: false`, `retry: 1`), `BrowserRouter`, and StrictMode, with React Query Devtools mounted.
 
-## State of migration (important)
+## Data fetching (React Query)
 
-Dependencies for `@tanstack/react-query`, `react-hook-form`, `zod`, and `@hookform/resolvers` are **installed but not yet adopted** — data fetching currently uses raw `axios` + `useEffect`/`useState`, and forms use controlled `useState` (see [DishForm.tsx](src/pages/Admin/AdminDishes/DishForm.tsx) and [RestaurantList/index.tsx](src/components/RestaurantList/index.tsx)). When touching data/forms, prefer migrating toward React Query + react-hook-form + Zod rather than extending the legacy pattern.
+All data fetching goes through React Query hooks in [src/hooks/](src/hooks/), never raw `axios` in components. Query keys are centralized in [src/hooks/queryKeys.ts](src/hooks/queryKeys.ts) so queries and their delete-mutation invalidations stay in sync:
+- `useShowcaseRestaurants` — `useInfiniteQuery` for the public vitrine; `getNextPageParam` returns the DRF `next` URL (absolute; axios ignores baseURL for it) and "Load more" calls `fetchNextPage`.
+- `useAdminRestaurants` / `useAdminDishes` — admin list queries, each paired with a `useDeleteRestaurant` / `useDeleteDish` mutation that invalidates its list on success (no manual state filtering).
+- `useTags` — unwraps the `{ tags }` envelope.
 
-Integration milestones for the alfood-api backend: M1 (env-based HTTP clients, no hardcoded URLs, nested `pratos[]` rendering in the showcase) and M2 (admin JWT auth: login page, Authorization/401 interceptors, guarded `/admin` routes, logout) are **done**. Remaining: M3 = React Query adoption; M4 = react-hook-form + Zod forms; M5 = verification/docs.
+Components render `isLoading` / `isError` states instead of swallowing errors in `console.log`. Test helper [src/test/queryWrapper.tsx](src/test/queryWrapper.tsx) provides an isolated `QueryClient` (retries off, `notifyOnChangeProps: "all"` so `renderHook` reflects post-`fetchNextPage` state).
+
+**Forms are still legacy** — [DishForm.tsx](src/pages/Admin/AdminDishes/DishForm.tsx) and [RestaurantForm.tsx](src/pages/Admin/AdminRestaurants/RestaurantForm.tsx) use controlled `useState` + raw `http` for load/submit (DishForm already reads its tag/restaurant selects via `useTags`/`useAdminRestaurants`). `react-hook-form`, `zod`, and `@hookform/resolvers` are installed for the M4 migration — prefer them over extending the controlled-state pattern.
+
+Integration milestones for the alfood-api backend: M1 (env-based HTTP clients), M2 (admin JWT auth), and M3 (React Query adoption + delete mutations + loading/error states) are **done**. Remaining: M4 = react-hook-form + Zod forms; M5 = verification/docs.
