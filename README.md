@@ -21,8 +21,8 @@ Alfood is an evolving MVP. The planned next steps are:
    - **React Query** (`@tanstack/react-query`) for all data fetching, replacing `axios` + `useEffect`/`useState`.
    - **React Hook Form** for form management, replacing manual controlled state.
    - **Zod** (with `@hookform/resolvers`) for form schema validation.
-2. **Automated testing**
-   - Unit and integration tests using React ecosystem testing libraries.
+2. **Automated testing** _(in progress)_
+   - Unit and integration tests with **Vitest + Testing Library** (configured; HTTP clients, restaurant list, and restaurant form are covered).
    - End-to-end (E2E) tests with **Playwright** covering critical flows.
 
 > The step-1 dependencies are already installed; adoption across the components is still pending.
@@ -37,10 +37,12 @@ Alfood is an evolving MVP. The planned next steps are:
 - `SCSS Modules`
 - `axios`
 - `React Query` · `React Hook Form` · `Zod` _(to be adopted — see Roadmap)_
+- `Vitest` + `Testing Library`
 
 ## 🛠️ Getting started
 
 > Prerequisite: the front-end expects an API running at `http://localhost:8000` (`/api/v1/` and `/api/v2/`).
+> The base URL can be overridden with `VITE_API_URL` (see `.env.example`).
 
 To run the project, execute `npm i` to install dependencies and `npm run dev` to start it.
 
@@ -52,3 +54,6 @@ Then open <a href="http://localhost:3000/">http://localhost:3000/</a> in your br
 - `npm run build` — type-checks (`tsc`) and builds for production.
 - `npm run typecheck` — type-check only, no build output.
 - `npm run preview` — serves the production build locally.
+- `npm test` — runs the test suite once (Vitest).
+- `npm run test:watch` — runs tests in watch mode.
+- `npm run test:coverage` — runs tests with a v8 coverage report.

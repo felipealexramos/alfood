@@ -1,44 +1,25 @@
 import { Routes, Route } from "react-router-dom";
-import Home from "./paginas/Home";
-import VitrineRestaurantes from "./paginas/VitrineRestaurantes";
-import AdministracaoRestaurantes from "./paginas/Admin/AdminRestaurantes/AdminRestaurantes";
-import FormularioRestaurante from "./paginas/Admin/AdminRestaurantes/FormularioRestaurante";
-import PaginaBaseAdmin from "./paginas/Admin/PaginaBaseAdmin";
-import AdministracaoPratos from "./paginas/Admin/AdminPratos/AdminPratos";
-import FormularioPratos from "./paginas/Admin/AdminPratos/FormularioPratos";
+import Home from "./pages/Home";
+import RestaurantShowcase from "./pages/RestaurantShowcase";
+import AdminRestaurants from "./pages/Admin/AdminRestaurants/AdminRestaurants";
+import RestaurantForm from "./pages/Admin/AdminRestaurants/RestaurantForm";
+import AdminBasePage from "./pages/Admin/AdminBasePage";
+import AdminDishes from "./pages/Admin/AdminDishes/AdminDishes";
+import DishForm from "./pages/Admin/AdminDishes/DishForm";
 
 function App() {
   return (
     <Routes>
       <Route path="/" element={<Home />} />
-      <Route path="/restaurantes" element={<VitrineRestaurantes />} />
+      <Route path="/restaurants" element={<RestaurantShowcase />} />
 
-      <Route path="/admin" element={<PaginaBaseAdmin/>}>
-        <Route
-          path="/admin/restaurantes"
-          element={<AdministracaoRestaurantes />}
-        />
-        <Route
-          path="/admin/restaurantes/novo"
-          element={<FormularioRestaurante />}
-        />
-        <Route
-          path="/admin/restaurantes/:id"
-          element={<FormularioRestaurante />}
-        />
-        <Route 
-          path="/admin/pratos"
-          element={<AdministracaoPratos />}
-        />
-        <Route
-          path="/admin/pratos/novo"
-          element={<FormularioPratos />}
-        />
-        <Route
-          path="/admin/pratos/:id"
-          element={<FormularioPratos />}
-        />
-
+      <Route path="/admin" element={<AdminBasePage />}>
+        <Route path="/admin/restaurants" element={<AdminRestaurants />} />
+        <Route path="/admin/restaurants/new" element={<RestaurantForm />} />
+        <Route path="/admin/restaurants/:id" element={<RestaurantForm />} />
+        <Route path="/admin/dishes" element={<AdminDishes />} />
+        <Route path="/admin/dishes/new" element={<DishForm />} />
+        <Route path="/admin/dishes/:id" element={<DishForm />} />
       </Route>
     </Routes>
   );

@@ -1,13 +1,15 @@
 import axios from "axios";
 
-/** API administrativa (CRUD da área /admin). */
+const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
+
+/** Admin API (CRUD for the /admin area). */
 const http = axios.create({
-  baseURL: "http://localhost:8000/api/v2/",
+  baseURL: `${API_URL}/api/v2/`,
 });
 
-/** API pública usada na vitrine de restaurantes. */
+/** Public API used by the restaurant showcase. */
 export const httpV1 = axios.create({
-  baseURL: "http://localhost:8000/api/v1/",
+  baseURL: `${API_URL}/api/v1/`,
 });
 
 export default http;
