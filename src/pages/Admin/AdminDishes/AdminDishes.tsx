@@ -1,33 +1,22 @@
-import { useEffect, useState } from 'react';
-import { Paper, Table, TableContainer, TableHead, TableRow, TableCell, TableBody, Button } from '@mui/material';
+import { Paper, Table, TableContainer, TableHead, TableRow, TableCell, TableBody, Button, Typography } from '@mui/material';
 import { Link } from 'react-router-dom';
-import http from '../../../http';
 import IDish from '../../../interfaces/IDish';
-
+import { useAdminDishes, useDeleteDish } from '../../../hooks/useAdminDishes';
 
 const AdminDishes = () => {
+    const { data: dishes, isLoading, isError } = useAdminDishes();
+    const deleteDish = useDeleteDish();
 
-    const [dishes, setDishes] = useState<IDish[]>([]);
+    if (isLoading) {
+        return <Typography sx={{ p: 2 }}>Loading…</Typography>;
+    }
 
-    useEffect(() => {
-       http.get<IDish[]>('pratos/')
-            .then(response => {
-                setDishes(response.data);
-            })
-            .catch(error => {
-                console.log(error);
-            });
-    }, []);
-
-    const handleDelete = (dishToDelete: IDish) => {
-        http.delete(`pratos/${dishToDelete.id}/`)
-            .then(() => {
-                const remainingDishes = dishes.filter(dish => dish.id !== dishToDelete.id);
-                setDishes(remainingDishes);
-            })
-            .catch(error => {
-                console.log(error);
-            });
+    if (isError) {
+        return (
+            <Typography sx={{ p: 2 }} color="error">
+                Could not load dishes. Please try again.
+            </Typography>
+        );
     }
 
     return (
@@ -44,7 +33,7 @@ const AdminDishes = () => {
                     </TableRow>
                 </TableHead>
                 <TableBody>
-                    {dishes.map((dish) => (
+                    {dishes?.map((dish: IDish) => (
                         <TableRow key={dish.id}>
                             <TableCell>{dish.nome}</TableCell>
                             <TableCell>{dish.descricao}</TableCell>
@@ -54,7 +43,12 @@ const AdminDishes = () => {
                                 <Link to={`/admin/dishes/${dish.id}`}>Edit</Link>
                             </TableCell>
                             <TableCell>
-                                <Button variant="contained" color="error" onClick={() => handleDelete(dish)}>
+                                <Button
+                                    variant="contained"
+                                    color="error"
+                                    disabled={deleteDish.isPending}
+                                    onClick={() => deleteDish.mutate(dish.id)}
+                                >
                                     Delete
                                 </Button>
                             </TableCell>

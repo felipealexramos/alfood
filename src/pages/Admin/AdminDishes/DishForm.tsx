@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import http from "../../../http";
-import ITag from "../../../interfaces/ITag";
-import IRestaurant from "../../../interfaces/IRestaurant";
+import { useTags } from "../../../hooks/useTags";
+import { useAdminRestaurants } from "../../../hooks/useAdminRestaurants";
 import {
   Box,
   Button,
@@ -21,19 +21,13 @@ const DishForm = () => {
   const [dishName, setDishName] = useState("");
   const [description, setDescription] = useState("");
   const [tag, setTag] = useState("");
-  const [tags, setTags] = useState<ITag[]>([]);
   const [restaurantId, setRestaurantId] = useState("");
-  const [restaurants, setRestaurants] = useState<IRestaurant[]>([]);
   const [image, setImage] = useState<File | null>(null);
 
-  useEffect(() => {
-    http
-      .get<{ tags: ITag[] }>("tags/")
-      .then((response) => setTags(response.data.tags));
-    http
-      .get<IRestaurant[]>("restaurantes/")
-      .then((response) => setRestaurants(response.data));
+  const { data: tags = [] } = useTags();
+  const { data: restaurants = [] } = useAdminRestaurants();
 
+  useEffect(() => {
     if (id) {
       http
         .get(`pratos/${id}/`)
