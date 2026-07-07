@@ -4,4 +4,6 @@ export const queryKeys = {
   adminDishes: ["admin", "dishes"] as const,
   tags: ["tags"] as const,
   showcaseRestaurants: ["showcase", "restaurants"] as const,
+  restaurant: (id: string) => ["admin", "restaurants", id] as const,
+  dish: (id: string) => ["admin", "dishes", id] as const,
 };

@@ -1,87 +1,107 @@
 import {
+  Alert,
   Box,
   Button,
-  Container, Paper,
+  Container,
+  Paper,
+  Snackbar,
   TextField,
-  Typography
+  Typography,
 } from "@mui/material";
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
-import IRestaurant from "../../../interfaces/IRestaurant";
-import http from "../../../http";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useNavigate, useParams } from "react-router-dom";
+import { restaurantSchema, RestaurantFormValues } from "./restaurantSchema";
+import {
+  useRestaurant,
+  useSaveRestaurant,
+} from "../../../hooks/useAdminRestaurants";
 
 const RestaurantForm = () => {
-  const params = useParams();
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const { data: restaurant } = useRestaurant(id);
+  const saveRestaurant = useSaveRestaurant(id);
+  const [successOpen, setSuccessOpen] = useState(false);
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<RestaurantFormValues>({
+    resolver: zodResolver(restaurantSchema),
+    defaultValues: { nome: "" },
+  });
 
   useEffect(() => {
-    if (params.id) {
-      http
-        .get<IRestaurant>(`restaurantes/${params.id}/`)
-        .then((response) => setRestaurantName(response.data.nome));
+    if (restaurant) {
+      reset({ nome: restaurant.nome });
     }
-  }, [params]);
+  }, [restaurant, reset]);
 
-  const [restaurantName, setRestaurantName] = useState("");
+  const onSubmit = (values: RestaurantFormValues) => {
+    saveRestaurant.mutate(values, {
+      onSuccess: () => setSuccessOpen(true),
+    });
+  };
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-
-    if (params.id) {
-      http
-        .put(`restaurantes/${params.id}/`, {
-          nome: restaurantName,
-        })
-        .then(() => {
-          alert("Restaurant updated successfully!");
-        });
-    } else {
-      http
-        .post("restaurantes/", {
-          nome: restaurantName,
-        })
-        .then(() => {
-          setRestaurantName("");
-          alert("Restaurant created successfully!");
-        });
-    }
+  const closeAndReturn = () => {
+    setSuccessOpen(false);
+    navigate("/admin/restaurants");
   };
 
   return (
-      <Box>
-        <Container maxWidth="lg" sx={{ mt: 1 }}>
-          <Paper sx={{ p: 2 }}>
+    <Box>
+      <Container maxWidth="lg" sx={{ mt: 1 }}>
+        <Paper sx={{ p: 2 }}>
+          <Box
+            sx={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+            }}
+          >
+            <Typography component="h1" variant="h6">
+              Restaurant Registration
+            </Typography>
             <Box
-              sx={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-              }}
+              component="form"
+              sx={{ width: "100%" }}
+              onSubmit={handleSubmit(onSubmit)}
             >
-              <Typography component="h1" variant="h6">
-                Restaurant Registration
-              </Typography>
-              <Box component="form" sx={{ width: '100%'}} onSubmit={handleSubmit}>
-                <TextField
-                  value={restaurantName}
-                  onChange={(event) => setRestaurantName(event.target.value)}
-                  label="Restaurant name"
-                  variant="standard"
-                  fullWidth
-                  required
-                />
-                <Button
-                  sx={{ marginTop: 1 }}
-                  type="submit"
-                  fullWidth
-                  variant="outlined"
-                >
-                  Save
-                </Button>
-              </Box>
+              <TextField
+                {...register("nome")}
+                label="Restaurant name"
+                variant="standard"
+                fullWidth
+                error={Boolean(errors.nome)}
+                helperText={errors.nome?.message}
+              />
+              <Button
+                sx={{ marginTop: 1 }}
+                type="submit"
+                fullWidth
+                variant="outlined"
+                disabled={saveRestaurant.isPending}
+              >
+                Save
+              </Button>
             </Box>
-          </Paper>
-        </Container>
-      </Box>
+          </Box>
+        </Paper>
+      </Container>
+      <Snackbar
+        open={successOpen}
+        autoHideDuration={1500}
+        onClose={closeAndReturn}
+      >
+        <Alert severity="success" onClose={closeAndReturn} sx={{ width: "100%" }}>
+          Restaurant {id ? "updated" : "created"} successfully!
+        </Alert>
+      </Snackbar>
+    </Box>
   );
 };
 

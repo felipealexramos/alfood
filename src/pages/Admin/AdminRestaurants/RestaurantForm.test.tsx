@@ -1,31 +1,35 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { AxiosResponse } from "axios";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import IRestaurant from "../../../interfaces/IRestaurant";
 import http from "../../../http";
+import { createQueryWrapper } from "../../../test/queryWrapper";
 import RestaurantForm from "./RestaurantForm";
+
+const navigateMock = vi.fn();
+
+vi.mock("react-router-dom", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("react-router-dom")>();
+  return { ...actual, useNavigate: () => navigateMock };
+});
 
 vi.mock("../../../http", () => ({
   default: { get: vi.fn(), post: vi.fn(), put: vi.fn() },
   httpV1: { get: vi.fn() },
 }));
 
-const restaurantResponse = (
-  restaurant: IRestaurant
-): AxiosResponse<IRestaurant> =>
-  ({ data: restaurant } as AxiosResponse<IRestaurant>);
-
-const renderRoute = (route: string) =>
-  render(
+const renderRoute = (route: string) => {
+  const { wrapper } = createQueryWrapper();
+  return render(
     <MemoryRouter initialEntries={[route]}>
       <Routes>
         <Route path="/admin/restaurants/new" element={<RestaurantForm />} />
         <Route path="/admin/restaurants/:id" element={<RestaurantForm />} />
       </Routes>
-    </MemoryRouter>
+    </MemoryRouter>,
+    { wrapper }
   );
+};
 
 describe("RestaurantForm", () => {
   const getMock = vi.mocked(http.get);
@@ -36,13 +40,21 @@ describe("RestaurantForm", () => {
     getMock.mockReset();
     postMock.mockReset();
     putMock.mockReset();
-    vi.spyOn(window, "alert").mockImplementation(() => {});
+    navigateMock.mockReset();
   });
 
-  it("creates a restaurant with a POST to a path relative to the http client", async () => {
-    postMock.mockResolvedValueOnce(
-      restaurantResponse({ id: 1, nome: "Burger Square", pratos: [] })
-    );
+  it("shows a validation error and does not submit when the name is empty", async () => {
+    renderRoute("/admin/restaurants/new");
+    const user = userEvent.setup();
+
+    await user.click(screen.getByRole("button", { name: /save/i }));
+
+    expect(await screen.findByText(/name is required/i)).toBeInTheDocument();
+    expect(postMock).not.toHaveBeenCalled();
+  });
+
+  it("creates a restaurant, shows a success message and returns to the list", async () => {
+    postMock.mockResolvedValueOnce({ data: { id: 1, nome: "Burger Square", pratos: [] } });
     renderRoute("/admin/restaurants/new");
     const user = userEvent.setup();
 
@@ -52,34 +64,32 @@ describe("RestaurantForm", () => {
     );
     await user.click(screen.getByRole("button", { name: /save/i }));
 
-    expect(postMock).toHaveBeenCalledWith("restaurantes/", {
-      nome: "Burger Square",
-    });
-    expect(getMock).not.toHaveBeenCalled();
+    await waitFor(() =>
+      expect(postMock).toHaveBeenCalledWith("restaurantes/", { nome: "Burger Square" })
+    );
+    expect(await screen.findByText(/created successfully/i)).toBeInTheDocument();
+    await waitFor(
+      () => expect(navigateMock).toHaveBeenCalledWith("/admin/restaurants"),
+      { timeout: 3000 }
+    );
   });
 
-  it("loads and updates an existing restaurant using relative paths", async () => {
-    getMock.mockResolvedValueOnce(
-      restaurantResponse({ id: 2, nome: "Bistro", pratos: [] })
-    );
-    putMock.mockResolvedValueOnce(
-      restaurantResponse({ id: 2, nome: "Bistro Square", pratos: [] })
-    );
+  it("loads an existing restaurant and updates it with PUT", async () => {
+    getMock.mockResolvedValueOnce({ data: { id: 2, nome: "Bistro", pratos: [] } });
+    putMock.mockResolvedValueOnce({ data: { id: 2, nome: "Bistro Square", pratos: [] } });
     renderRoute("/admin/restaurants/2");
     const user = userEvent.setup();
 
-    const nameField = screen.getByRole("textbox", {
-      name: /restaurant name/i,
-    });
     expect(await screen.findByDisplayValue("Bistro")).toBeInTheDocument();
     expect(getMock).toHaveBeenCalledWith("restaurantes/2/");
 
+    const nameField = screen.getByRole("textbox", { name: /restaurant name/i });
     await user.clear(nameField);
     await user.type(nameField, "Bistro Square");
     await user.click(screen.getByRole("button", { name: /save/i }));
 
-    expect(putMock).toHaveBeenCalledWith("restaurantes/2/", {
-      nome: "Bistro Square",
-    });
+    await waitFor(() =>
+      expect(putMock).toHaveBeenCalledWith("restaurantes/2/", { nome: "Bistro Square" })
+    );
   });
 });
