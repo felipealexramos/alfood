@@ -1,93 +1,75 @@
-import React, { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
-import http from "../../../http";
-import { useTags } from "../../../hooks/useTags";
-import { useAdminRestaurants } from "../../../hooks/useAdminRestaurants";
 import {
+  Alert,
   Box,
   Button,
   Container,
   FormControl,
+  FormHelperText,
   InputLabel,
   MenuItem,
   Paper,
   Select,
+  Snackbar,
   TextField,
   Typography,
 } from "@mui/material";
+import { useEffect, useState } from "react";
+import { Controller, useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useNavigate, useParams } from "react-router-dom";
+import { dishSchema, DishFormValues } from "./dishSchema";
+import { useTags } from "../../../hooks/useTags";
+import { useAdminRestaurants } from "../../../hooks/useAdminRestaurants";
+import { useDish, useSaveDish } from "../../../hooks/useAdminDishes";
 
 const DishForm = () => {
   const { id } = useParams<{ id: string }>();
-  const [dishName, setDishName] = useState("");
-  const [description, setDescription] = useState("");
-  const [tag, setTag] = useState("");
-  const [restaurantId, setRestaurantId] = useState("");
-  const [image, setImage] = useState<File | null>(null);
-
+  const navigate = useNavigate();
   const { data: tags = [] } = useTags();
   const { data: restaurants = [] } = useAdminRestaurants();
+  const { data: dish } = useDish(id);
+  const saveDish = useSaveDish(id);
+  const [successOpen, setSuccessOpen] = useState(false);
+
+  const {
+    register,
+    control,
+    handleSubmit,
+    reset,
+    setValue,
+    formState: { errors },
+  } = useForm<DishFormValues>({
+    resolver: zodResolver(dishSchema),
+    defaultValues: {
+      nome: "",
+      descricao: "",
+      tag: "",
+      restaurante: "",
+      imagem: undefined,
+    },
+  });
 
   useEffect(() => {
-    if (id) {
-      http
-        .get(`pratos/${id}/`)
-        .then((response) => {
-          setDishName(response.data.nome);
-          setDescription(response.data.descricao);
-          setTag(response.data.tag);
-          setRestaurantId(response.data.restaurante);
-        })
-        .catch((error) => {
-          console.log(error);
-        });
+    if (dish) {
+      reset({
+        nome: dish.nome,
+        descricao: dish.descricao,
+        tag: dish.tag,
+        restaurante: String(dish.restaurante),
+        imagem: undefined,
+      });
     }
-  }, [id]);
+  }, [dish, reset]);
 
-  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (event.target.files) {
-      setImage(event.target.files[0]);
-    } else {
-      setImage(null);
-    }
+  const onSubmit = (values: DishFormValues) => {
+    saveDish.mutate(values, {
+      onSuccess: () => setSuccessOpen(true),
+    });
   };
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-
-    // FormData keys follow the backend API contract (pt-BR) — do not translate them.
-    const formData = new FormData();
-    formData.append("nome", dishName);
-    formData.append("descricao", description);
-    formData.append("tag", tag);
-    formData.append("restaurante", restaurantId);
-
-    if (image) {
-      formData.append("imagem", image);
-    }
-
-    const method = id ? "PUT" : "POST";
-    const url = id ? `pratos/${id}/` : "pratos/";
-
-    http
-      .request({
-        url: url,
-        method: method,
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-        data: formData,
-      })
-      .then(() => {
-        setDishName("");
-        setDescription("");
-        setTag("");
-        setRestaurantId("");
-        setImage(null);
-        alert(`Dish ${id ? "updated" : "created"} successfully!`);
-      })
-      .catch((error) => {
-        console.log(error);
-      });
+  const closeAndReturn = () => {
+    setSuccessOpen(false);
+    navigate("/admin/dishes");
   };
 
   return (
@@ -107,68 +89,99 @@ const DishForm = () => {
             <Box
               component="form"
               sx={{ width: "100%" }}
-              onSubmit={handleSubmit}
+              onSubmit={handleSubmit(onSubmit)}
             >
               <TextField
-                value={dishName}
-                onChange={(event) => setDishName(event.target.value)}
+                {...register("nome")}
                 label="Dish name"
                 variant="standard"
                 fullWidth
-                required
+                error={Boolean(errors.nome)}
+                helperText={errors.nome?.message}
                 sx={{ mb: 2 }}
               />
               <TextField
-                value={description}
-                onChange={(event) => setDescription(event.target.value)}
+                {...register("descricao")}
                 label="Dish description"
                 variant="standard"
                 fullWidth
-                required
+                error={Boolean(errors.descricao)}
+                helperText={errors.descricao?.message}
                 sx={{ mb: 2 }}
               />
 
-              <FormControl margin="dense" fullWidth sx={{ mb: 2 }}>
+              <FormControl
+                margin="dense"
+                fullWidth
+                sx={{ mb: 2 }}
+                error={Boolean(errors.tag)}
+              >
                 <InputLabel id="select-tag">Tag</InputLabel>
-                <Select
-                  labelId="select-tag"
-                  value={tag}
-                  onChange={(event) => setTag(event.target.value)}
-                >
-                  {tags.map((tag) => (
-                    <MenuItem key={tag.id} value={tag.value}>
-                      {tag.value}
-                    </MenuItem>
-                  ))}
-                </Select>
+                <Controller
+                  name="tag"
+                  control={control}
+                  render={({ field }) => (
+                    <Select labelId="select-tag" label="Tag" {...field}>
+                      {tags.map((tag) => (
+                        <MenuItem key={tag.id} value={tag.value}>
+                          {tag.value}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  )}
+                />
+                {errors.tag && <FormHelperText>{errors.tag.message}</FormHelperText>}
               </FormControl>
 
-              <FormControl margin="dense" fullWidth sx={{ mb: 2 }}>
+              <FormControl
+                margin="dense"
+                fullWidth
+                sx={{ mb: 2 }}
+                error={Boolean(errors.restaurante)}
+              >
                 <InputLabel id="select-restaurant">Restaurant</InputLabel>
-                <Select
-                  labelId="select-restaurant"
-                  value={restaurantId}
-                  onChange={(event) => setRestaurantId(event.target.value)}
-                >
-                  {restaurants.map((restaurant) => (
-                    <MenuItem key={restaurant.id} value={restaurant.id}>
-                      {restaurant.nome}
-                    </MenuItem>
-                  ))}
-                </Select>
+                <Controller
+                  name="restaurante"
+                  control={control}
+                  render={({ field }) => (
+                    <Select
+                      labelId="select-restaurant"
+                      label="Restaurant"
+                      {...field}
+                    >
+                      {restaurants.map((restaurant) => (
+                        <MenuItem key={restaurant.id} value={String(restaurant.id)}>
+                          {restaurant.nome}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  )}
+                />
+                {errors.restaurante && (
+                  <FormHelperText>{errors.restaurante.message}</FormHelperText>
+                )}
               </FormControl>
 
               <input
                 type="file"
-                onChange={handleFileSelect}
-                style={{ marginBottom: "16px" }}
+                aria-label="Dish image"
+                onChange={(event) =>
+                  setValue("imagem", event.target.files?.[0], {
+                    shouldValidate: true,
+                  })
+                }
+                style={{ marginBottom: "8px" }}
               />
+              {errors.imagem && (
+                <FormHelperText error>{errors.imagem.message}</FormHelperText>
+              )}
 
               <Button
                 sx={{ marginTop: 1 }}
                 type="submit"
                 fullWidth
                 variant="outlined"
+                disabled={saveDish.isPending}
               >
                 Save
               </Button>
@@ -176,6 +189,15 @@ const DishForm = () => {
           </Box>
         </Paper>
       </Container>
+      <Snackbar
+        open={successOpen}
+        autoHideDuration={1500}
+        onClose={closeAndReturn}
+      >
+        <Alert severity="success" onClose={closeAndReturn} sx={{ width: "100%" }}>
+          Dish {id ? "updated" : "created"} successfully!
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };

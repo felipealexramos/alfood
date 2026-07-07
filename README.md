@@ -17,15 +17,13 @@ It's an MVP that's just getting started, with many new features still to be buil
 
 Alfood is an evolving MVP. The planned next steps are:
 
-1. **Data-layer and forms migration** _(in progress)_
+1. **Data-layer and forms migration** _(done)_
    - **React Query** (`@tanstack/react-query`) for all data fetching, replacing `axios` + `useEffect`/`useState`.
    - **React Hook Form** for form management, replacing manual controlled state.
    - **Zod** (with `@hookform/resolvers`) for form schema validation.
 2. **Automated testing** _(in progress)_
-   - Unit and integration tests with **Vitest + Testing Library** (configured; HTTP clients, restaurant list, and restaurant form are covered).
+   - Unit and integration tests with **Vitest + Testing Library** (data hooks, forms, auth, and the showcase are covered).
    - End-to-end (E2E) tests with **Playwright** covering critical flows.
-
-> The step-1 dependencies are already installed; adoption across the components is still pending.
 
 ## ✔️ Techniques and technologies
 
@@ -36,7 +34,7 @@ Alfood is an evolving MVP. The planned next steps are:
 - `Material UI (MUI)` + `Emotion`
 - `SCSS Modules`
 - `axios`
-- `React Query` · `React Hook Form` · `Zod` _(to be adopted — see Roadmap)_
+- `React Query` · `React Hook Form` · `Zod`
 - `Vitest` + `Testing Library`
 
 ## 🛠️ Getting started
