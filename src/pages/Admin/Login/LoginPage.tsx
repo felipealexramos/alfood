@@ -11,6 +11,15 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { login } from "../../../auth/authService";
 
+/** Reads an HTTP status from an unknown error shape (AxiosError or similar). */
+function getErrorStatus(error: unknown): number | undefined {
+  if (typeof error === "object" && error !== null && "response" in error) {
+    const { response } = error as { response?: { status?: number } };
+    return response?.status;
+  }
+  return undefined;
+}
+
 const LoginPage = () => {
   const navigate = useNavigate();
   const [username, setUsername] = useState("");
@@ -25,8 +34,12 @@ const LoginPage = () => {
       // usuario/senha are the backend contract field names — do not translate.
       await login({ usuario: username, senha: password });
       navigate("/admin/restaurants");
-    } catch {
-      setError("Invalid credentials. Please try again.");
+    } catch (submitError) {
+      setError(
+        getErrorStatus(submitError) === 401
+          ? "Invalid credentials. Please try again."
+          : "Something went wrong. Please try again later."
+      );
     }
   };
 

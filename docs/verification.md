@@ -33,26 +33,7 @@ Against a running backend at `http://localhost:8000` (`curl`):
 The frontend's contract assumptions (public envelope, JWT guard, login
 validation) hold against the live backend.
 
-## Known environment gap (blocks authenticated E2E here)
 
-`POST /api/v2/auth/login` currently returns **500** for any credentials because
-the backend's `ADMIN_PASSWORD_HASH` is **empty** in `../alfood-api/.env`. Admin
-auth is therefore not configured in this environment, so the authenticated CRUD
-flows (login → restaurants/dishes create/edit/delete → logout) cannot be
-exercised end-to-end until a backend admin password is set:
-
-```bash
-# in ../alfood-api
-node -e "console.log(require('bcryptjs').hashSync('your-password', 10))"
-# paste into ADMIN_PASSWORD_HASH in ../alfood-api/.env, then restart the API
-```
-
-This is a backend setup step, not a frontend defect. Once set, bad credentials
-return `401` and valid credentials return `200 { access_token }`.
-
-> Note: the frontend `LoginPage` shows the generic "Invalid credentials" message
-> for any login failure, including a `500`. Distinguishing server errors from bad
-> credentials is a possible follow-up, out of scope for M5.
 
 ## Manual QA checklist (run once the backend has data + admin credentials)
 
