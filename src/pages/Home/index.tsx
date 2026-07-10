@@ -13,10 +13,6 @@ function Home() {
         <img src="/images/cooking_01.jpg" alt="A conceptual dish" />
         <div className={styles.CenterCard}>
           <h2>The best restaurant network!</h2>
-          <div>
-            <p>become a partner now:</p>
-            <p>call <a href="callto:99999999999">(99) 99999-999</a></p>
-          </div>
         </div>
         <img src="/images/cooking_02.jpg" alt="A deconstructed burger" />
       </div>
@@ -40,8 +36,9 @@ function Home() {
       </div>
       <div className={styles.Links}>
         <h3>Discover the best restaurants</h3>
-        <p>Click <Link to='/restaurants'>here</Link></p>
+        <Link to='/restaurants' className={styles.CtaButton}>See all restaurants</Link>
       </div>
+
       <Footer />
     </>
   );
