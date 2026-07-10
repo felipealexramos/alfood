@@ -4,10 +4,10 @@ import http from "../http";
 import IDish from "../interfaces/IDish";
 import { createQueryWrapper } from "../test/queryWrapper";
 import { queryKeys } from "./queryKeys";
-import { useAdminDishes, useDeleteDish } from "./useAdminDishes";
+import { useAdminDishes, useDeleteDish, useSaveDish } from "./useAdminDishes";
 
 vi.mock("../http", () => ({
-  default: { get: vi.fn(), delete: vi.fn() },
+  default: { get: vi.fn(), delete: vi.fn(), request: vi.fn() },
   httpV1: { get: vi.fn() },
 }));
 
@@ -25,10 +25,12 @@ const dishes: IDish[] = [
 describe("useAdminDishes", () => {
   const getMock = vi.mocked(http.get);
   const deleteMock = vi.mocked(http.delete);
+  const requestMock = vi.mocked(http.request);
 
   beforeEach(() => {
     getMock.mockReset();
     deleteMock.mockReset();
+    requestMock.mockReset();
   });
 
   it("fetches the admin dish list from pratos/", async () => {
@@ -54,5 +56,26 @@ describe("useAdminDishes", () => {
     expect(invalidateSpy).toHaveBeenCalledWith({
       queryKey: queryKeys.adminDishes,
     });
+  });
+
+  it("appends the image to the form data when a new file was picked", async () => {
+    requestMock.mockResolvedValueOnce({ data: {} });
+    const image = new File(["binary"], "dish.jpg", { type: "image/jpeg" });
+    const { wrapper } = createQueryWrapper();
+
+    const { result } = renderHook(() => useSaveDish(), { wrapper });
+    await result.current.mutateAsync({
+      nome: "Stroganoff",
+      descricao: "Mushroom stroganoff",
+      tag: "Vegetarian",
+      restaurante: "1",
+      imagem: image,
+    });
+
+    expect(requestMock).toHaveBeenCalledWith(
+      expect.objectContaining({ url: "pratos/", method: "POST" })
+    );
+    const formData = requestMock.mock.calls[0][0].data as FormData;
+    expect(formData.get("imagem")).toBe(image);
   });
 });
